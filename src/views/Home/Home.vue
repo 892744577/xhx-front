@@ -8,34 +8,42 @@
     <div class="body">
       <div v-for="item in data">
         <div class="item-header">
-          <div>产品条码：{{item.Barcode}}</div>
+          <div>单据编号：{{item.ID}}</div>
         </div>
         <div class="item-content" @click="showItemPopup(item)">
-          <div>数量：{{item.Quantity}}{{item.Unit}}</div>
-          <div>单据编号：{{item.ID}}</div>
+          <van-row>
+            <van-col span="15"><div>产品条码：{{item.Barcode}}</div></van-col>
+            <van-col span="9"><div>数量：{{item.Quantity}}{{item.Unit}}</div></van-col>
+          </van-row>
           <div>单据日期：{{item.SO_DealDate}}</div>
           <div>网上订单单号：{{item.SO_ClientOrderID}}</div>
-          <div>客户姓名：{{item.Ct_Name}}</div>
+          <!--<div>客户姓名：{{item.Ct_Name}}</div>-->
           <div>产品名称：{{item.Pt_Name}}</div>
-          <div>客户地址：{{item.Jc_Name}}</div>
           <div>别称：{{item.BillSpecPara01}}</div>
-          <div class="lhw">
-            <div>长：{{item.BillSpecPara02}}</div>
-            <div>高：{{item.BillSpecPara03}}</div>
-            <div>宽：{{item.BillSpecPara05}}</div>
-            <div>墙厚：{{item.BillSpecPara08}}</div>
-          </div>
-          <div>扇数：{{item.BillSpecPara09}}</div>
-          <div>终端：{{item.BillSpecPara12}}</div>
-          <div>型号：{{item.BillSpecPara15}}</div>
-          <div>颜色：{{item.BillSpecPara16}}</div>
-          <div>卖出：{{item.buyOut}}</div>
+          <div>客户地址：{{item.Jc_Name}}</div>
+          <van-row>
+            <van-col span="8"><div>长：{{item.BillSpecPara02}}</div></van-col>
+            <van-col span="8"><div>高：{{item.BillSpecPara03}}</div></van-col>
+            <van-col span="8"><div>宽：{{item.BillSpecPara05}}</div></van-col>
+          </van-row>
+          <van-row>
+            <van-col span="8"><div>墙厚：{{item.BillSpecPara08}}</div></van-col>
+            <van-col span="8"><div>扇数：{{item.BillSpecPara09}}</div></van-col>
+            <van-col span="8"><div>终端：{{item.BillSpecPara12}}</div></van-col>
+          </van-row>
+          <van-row>
+            <van-col span="8"><div>型号：{{item.BillSpecPara15}}</div></van-col>
+            <van-col span="8"><div>颜色：{{item.BillSpecPara16}}</div></van-col>
+          </van-row>
+          <div>卖出：{{item.buyOut}} 元</div>
         </div>
         <div class="item-button">
           <van-button type="primary" @click="showBuyOutPopup(item)">卖出</van-button>
-          <van-button type="warning" @click="showBuyInPopup(item)">买入</van-button>
+          <van-button type="warning" @click="showBuyInPopup(item)">支出</van-button>
+          <van-button type="warning" @click="showBuyInPopup(item)">回款</van-button>
         </div>
       </div>
+      <div class="item-button"></div>
     </div>
     <div class="pagination">
       <van-pagination
@@ -71,10 +79,10 @@
         <div>{{order.SpecSubsidiary}}</div>
       </div>
     </van-popup>
-    <van-dialog v-model="buyOutShow" title="卖出" show-cancel-button @confirm="updateBuyOut()">
+    <van-dialog v-model="buyOutShow" title="收入" show-cancel-button @confirm="updateBuyOut()">
       <van-field v-model="buyOut" type="digit" label="整数" />
     </van-dialog>
-    <van-dialog v-model="buyInShow" title="卖出" show-cancel-button @confirm="updateBuyIn()">
+    <van-dialog v-model="buyInShow" title="支出" show-cancel-button @confirm="updateBuyIn()">
       <van-field v-model="buyIn" type="digit" label="整数" />
     </van-dialog>
   </div>

@@ -12,7 +12,7 @@ module.exports = {
     productionSourceMap: false,
     devServer: {
         disableHostCheck: true,
-        port: 9003,
+        port: 9010,
         open: true,
         overlay: {
             warnings: false,
