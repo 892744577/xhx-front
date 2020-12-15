@@ -16,8 +16,7 @@ Vue.use(Vant);
 //Vue.use(Antd);
 
 import '@/icons' // icon
-Vue.config.productionTip = false
-
+Vue.config.productionTip = false;
 new Vue({
   router,
   store,

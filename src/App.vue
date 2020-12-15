@@ -11,30 +11,30 @@
 import tabbar from '@/components/navigationBar/tabbar.vue'
 import navbar from '@/components/navigationBar/navbar.vue'
 export default {
-  data() {
-    return { include: [], transitionName: '' }
-  },
-  components: {
-      tabbar,
-      navbar
-  },
-  computed: {},
-
-  watch: {
-    $route(to, from) {
-      const tabPath = ['/home', '/record', '/setting', '/mine', '/login']
-      if (
-        tabPath.some(item => item == to.path) &&
-        tabPath.some(item => item == from.path)
-      ) {
-        this.transitionName = 'fade'
-      } else {
-        const toDepth = to.path.split('/').length
-        const fromDepth = from.path.split('/').length
-        this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
+    data() {
+      return { include: [], transitionName: '' }
+    },
+    components: {
+        tabbar,
+        navbar
+    },
+    created: {},
+    computed: {},
+    watch: {
+      $route(to, from) {
+        const tabPath = ['/home', '/record', '/setting', '/mine', '/login']
+        if (
+          tabPath.some(item => item == to.path) &&
+          tabPath.some(item => item == from.path)
+        ) {
+          this.transitionName = 'fade'
+        } else {
+          const toDepth = to.path.split('/').length
+          const fromDepth = from.path.split('/').length
+          this.transitionName = toDepth < fromDepth ? 'slide-right' : 'slide-left'
+        }
       }
     }
-  }
 }
 </script>
 <style lang="scss" scoped>

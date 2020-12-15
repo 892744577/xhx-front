@@ -1,12 +1,12 @@
 <template>
   <div class="home">
     <div class="header">
-      <div class="search"><van-search left-icon v-model="search" placeholder="请输入搜索关键词"/></div>
+      <div class="search"><van-search left-icon v-model="search" placeholder="请输入单据编号/地址等关键词" @blur="onSearch()"/></div>
       <div class="verticalBar"/>
       <div class="icon" @click="showQueryPopup"><div>筛选</div><van-icon name="filter-o" size="0.5rem"/></div>
     </div>
     <div class="body">
-      <div v-for="(row,i) in listTemp">
+      <div v-for="(row,i) in orderListTemp">
         <div class="item-header">
           <div>单据编号：{{row[0].ID}}</div>
         </div>
@@ -43,12 +43,11 @@
             </div>
         </div>
         <div class="item-button">
-          <van-button type="primary" @click="showSalePopup(row[0].ID)">卖出</van-button>
-          <van-button type="warning" @click="showPayPopup(row[0].ID)">支出</van-button>
-          <van-button type="danger" @click="showIncomePopup(row[0].ID)">回款</van-button>
+          <van-button type="primary" @click="showSalePopup(row[0])">卖出</van-button>
+          <van-button type="warning" @click="showPayPopup(row[0])">支出</van-button>
+          <van-button type="danger" @click="showIncomePopup(row[0])">回款</van-button>
         </div>
       </div>
-      <div class="item-button"></div>
     </div>
       <div class="space"></div>
     <div class="pagination">
@@ -85,6 +84,8 @@
         <div class="attrItem">{{order.SpecSubsidiary}}</div>
       </div>
     </van-popup>
+
+    <!--日期弹窗-->
     <van-popup  v-model="dateShow1"
                 position="bottom"
                 :style="{ height: '40%' }"
@@ -93,9 +94,7 @@
               v-model="saleInfo.sale_time"
               type="date"
               title="销售时间"
-              :min-date="minDate"
-              :max-date="maxDate"
-              @confirm="setData()"
+              @confirm="showDatePopup1(false)"
               @cancel="showDatePopup1(false)"
       />
     </van-popup>
@@ -107,9 +106,7 @@
               v-model="payInfo.pay_time"
               type="date"
               title="支出时间"
-              :min-date="minDate"
-              :max-date="maxDate"
-              @confirm="setData()"
+              @confirm="showDatePopup1(false)"
               @cancel="showDatePopup2(false)"
       />
     </van-popup>
@@ -121,9 +118,7 @@
               v-model="incomeInfo.income_time"
               type="date"
               title="回款时间"
-              :min-date="minDate"
-              :max-date="maxDate"
-              @confirm="setData()"
+              @confirm="showDatePopup1(false)"
               @cancel="showDatePopup3(false)"
       />
     </van-popup>
@@ -133,7 +128,7 @@
                position="bottom"
                :style="{ height: '90%' }">
       <van-cell-group>
-        <div class="saleShow-header">销售</div>
+        <div class="record-header">卖出记账</div>
       </van-cell-group>
       <van-cell-group>
           <van-field v-model="saleInfo.fee" type="digit" label="销售总价" />
@@ -142,23 +137,40 @@
           <van-field v-model="saleInfo.salor" label="销售人员" placeholder="请输入销售人员" />
       </van-cell-group>
       <van-cell-group>
-        <van-field v-model="saleInfo.sale_time" label="销售时间" placeholder="请输入销售时间" @click="showDatePopup1(true)"/>
+        <van-field v-model="sale_time_show"
+                   label="销售时间"
+                   placeholder="请输入销售时间"
+                   @click="showDatePopup1(true)"
+                   />
       </van-cell-group>
-      <div class="saleShow-footer">
-        <van-button type="primary" @click="showDatePopup1(false)">取消</van-button>
-        <van-button type="danger" @click="showIncomePopup(row[0].ID)">保存</van-button>
+      <div class="record-footer">
+        <van-button type="primary" @click="showSalePopup(false)">取消</van-button>
+        <van-button type="danger" @click="saveSale()">保存</van-button>
       </div>
-
-      <!--销售录入记录，一般只能录一次-->
+      <div class="recordTable">
+        <div class="recordRow">
+          <div class="recordCell">费用</div>
+          <div class="recordCell">销售人</div>
+          <div class="recordCell">时间</div>
+        </div>
+        <div class="recordRow" v-for="(item,k) in saleListTemp" :key="k">
+          <div class="recordCell">{{item.fee}}</div>
+          <div class="recordCell">{{item.salor}}</div>
+          <div class="recordCell">{{item.sale_time}}</div>
+        </div>
+      </div>
     </van-popup>
     <van-popup v-model="payShow"
                position="bottom"
                :style="{ height: '90%' }">
       <van-cell-group>
+        <div class="record-header">支出记账</div>
+      </van-cell-group>
+      <van-cell-group>
         <van-field v-model="payInfo.fee" type="digit" label="支出费用" />
       </van-cell-group>
       <van-cell-group>
-        <van-radio-group v-model="radio">
+        <van-radio-group v-model="payInfo.fee_type" class="radio-group">
           <van-radio name="1">买货</van-radio>
           <van-radio name="2">人工</van-radio>
           <van-radio name="3">材料</van-radio>
@@ -166,32 +178,75 @@
         </van-radio-group>
       </van-cell-group>
       <van-cell-group>
-        <van-field v-model="payInfo.pay_time" label="支出时间" placeholder="请输入支出时间" @click="showDatePopup2(true)"/>
+        <van-field v-model="pay_time_show"
+                   label="支出时间"
+                   placeholder="请输入支出时间"
+                   @click="showDatePopup2(true)"/>
       </van-cell-group>
-
-      <!--支出录入记-->
-
+      <div class="record-footer">
+        <van-button type="primary" @click="showPayPopup(false)">取消</van-button>
+        <van-button type="danger" @click="savePay()">保存</van-button>
+      </div>
+      <div class="recordTable">
+        <div class="recordRow">
+          <div class="recordCell">费用</div>
+          <div class="recordCell">支出类型</div>
+          <div class="recordCell">时间</div>
+        </div>
+        <div class="recordRow" v-for="(item,k) in payListTemp" :key="k">
+          <div class="recordCell">{{item.fee}}</div>
+          <div class="recordCell">{{item.fee_type}}</div>
+          <div class="recordCell">{{item.pay_time}}</div>
+        </div>
+      </div>
     </van-popup>
     <van-popup v-model="incomeShow"
                position="bottom"
                :style="{ height: '90%' }">
       <van-cell-group>
+        <div class="record-header">回款记账</div>
+      </van-cell-group>
+      <van-cell-group>
         <van-field v-model="incomeInfo.fee" type="digit" label="回款" />
+      </van-cell-group>
+      <van-cell-group>
+        <van-radio-group v-model="incomeInfo.fee_type" class="radio-group">
+          <van-radio name="1">定金</van-radio>
+          <van-radio name="2">尾款</van-radio>
+        </van-radio-group>
       </van-cell-group>
       <van-cell-group>
         <van-field v-model="incomeInfo.incomor" label="收款人" placeholder="请输入收款人" />
       </van-cell-group>
       <van-cell-group>
-        <van-field v-model="incomeInfo.income_time" label="回款时间" placeholder="请输入收款时间" @click="showDatePopup3(true)"/>
+        <van-field v-model="income_time_show" label="回款时间" placeholder="请输入收款时间" @click="showDatePopup3(true)"/>
       </van-cell-group>
-
-      <!--回款录入记录-->
+      <div class="record-footer">
+        <van-button type="primary" @click="showIncomePopup(false)">取消</van-button>
+        <van-button type="danger" @click="saveIncome()">保存</van-button>
+      </div>
+      <div class="recordTable">
+        <div class="recordRow">
+          <div class="recordCell">费用</div>
+          <div class="recordCell">回款类型</div>
+          <div class="recordCell">回款人</div>
+          <div class="recordCell">时间</div>
+        </div>
+        <div class="recordRow" v-for="(item,k) in incomeListTemp" :key="k">
+          <div class="recordCell">{{item.fee}}</div>
+          <div class="recordCell">{{item.fee_type}}</div>
+          <div class="recordCell">{{item.incomor}}</div>
+          <div class="recordCell">{{item.income_time}}</div>
+        </div>
+      </div>
     </van-popup>
   </div>
 </template>
 
 <script>
 import { postJson } from '@/utils/axios';
+import moment from 'moment';
+import { Dialog } from 'vant';
 export default {
   name: 'home',
   data() {
@@ -200,7 +255,7 @@ export default {
         search:'',
         queryShow:false,
         //卡片
-        data:[],
+        orderList:[],
         order:{},
         itemShow:false,
         //分页
@@ -212,25 +267,32 @@ export default {
         //卖出
         saleShow:false,
         saleInfo:{
+            fee:0,
+            salor:'',
             sale_time: new Date(),
         },
         dateShow1:false,
+        saleList:[],
         //支出
         payShow:false,
         payInfo:{
             fee:0,
+            fee_type: '1',
             pay_time: new Date(),
         },
         dateShow2:false,
         radio: '1',
+        payList:[],
         //回款
         incomeShow:false,
         incomeInfo:{
             fee:0,
+            fee_type:'1',
+            incomor:'',
             income_time: new Date(),
         },
         dateShow3:false,
-
+        incomeList:[],
     }
   },
   //生命周期函数
@@ -242,7 +304,7 @@ export default {
       onSearch: function(){
           postJson("/order/query",{
               data: {
-                  search:'',
+                  search:this.search,
               },
               pageQuery: {
                   orderBy: " id desc ",
@@ -250,7 +312,7 @@ export default {
                   pageSize: 10,
               }
           }).then((res)=>{
-              this.data = res.data;
+              this.orderList = res.data;
               this.total = res.extra.total;
           })
       },
@@ -262,7 +324,7 @@ export default {
         this.order = item;
       },
 
-      //三大pupop
+      //时间组件pupop
       showDatePopup1: function(dateShow){
           this.dateShow1 = dateShow;
       },
@@ -272,61 +334,152 @@ export default {
       showDatePopup3: function(dateShow){
           this.dateShow3 = dateShow;
       },
-      showSalePopup: function(item){
+
+      //记账popup
+      showSalePopup: async function(item){
           this.saleShow = true;
           this.order = item;
+          this.querySale();
       },
-      showPayPopup: function(item){
+      showPayPopup: async function(item){
           this.payShow = true;
           this.order = item;
+          this.queryPay();
       },
       showIncomePopup: function(item){
           this.incomeShow = true;
           this.order = item;
+          this.queryIncome();
       },
 
-      //业务操作
-      updateSale: async function(){
-          await postJson("/order/update",{
-              Barcode: this.order.Barcode,
-              buyOut: this.buyOut
+      //业务操作：账目查询和保存
+      querySale: async function(){
+          let res = await postJson("/sale/query",{
+              data:{
+                  "order_id":this.order.ID
+              },
+              pageQuery: {
+                  orderBy: " id desc ",
+                  pageNum: 1,
+                  pageSize: 100,
+              }
           });
-          this.onSearch();
+          this.saleList = res.data;
       },
-      updatePay: async function(){
-          await postJson("/order/update",{
-              Barcode: this.order.Barcode,
-              buyIn: this.buyIn
+      saveSale: async function(){
+          Dialog.confirm({
+              title: '保存销售记录',
+              message: '是否保存',
+          }).then(async () => {
+              await postJson("/sale/save",Object.assign(this.saleInfo,{order_id:this.order.ID}));
+              this.querySale();
           });
-          this.onSearch();
       },
-      updateIncome: async function(){
-          await postJson("/order/update",{
-              Barcode: this.order.Barcode,
-              buyIn: this.buyIn
+      queryPay: async function(){
+          let res = await postJson("/pay/query",{
+              data:{
+                  "order_id":this.order.ID
+              },
+              pageQuery: {
+                  orderBy: " id desc ",
+                  pageNum: 1,
+                  pageSize: 100,
+              }
           });
-          this.onSearch();
+          this.payList = res.data;
+      },
+      savePay: async function(){
+          await postJson("/pay/save",Object.assign(this.payInfo,{order_id:this.order.ID}));
+          this.queryPay();
+      },
+      queryIncome: async function(){
+          let res = await postJson("/income/query",{
+              data:{
+                  "order_id":this.order.ID
+              },
+              pageQuery: {
+                  orderBy: " id desc ",
+                  pageNum: 1,
+                  pageSize: 100,
+              }
+          });
+          this.incomeList = res.data;
+      },
+      saveIncome: async function(){
+          await postJson("/income/save",Object.assign(this.incomeInfo,{order_id:this.order.ID}));
+          this.queryIncome();
       }
   },
   //计算属性
   computed: {
-      listTemp: function () {
-          let list = this.data;
+      //list集合处理
+      orderListTemp: function () {
+          let list = this.orderList;
           //格式：[[],[],[]...]
           let arrTemp = [];
           let index = 0;
           for (let i = 0; i < list.length; i++) {
+              //指定文字加粗
+              let item = list[i];
+              if(item.Jc_Name != null && item.Jc_Name != ''){
+
+              }
+              //转换格式
               if (i == 0) {
                   arrTemp.push([]);
               }
               if (i > 0 && (list[i-1].ID != list[i].ID)) {
                   arrTemp.push([]);
               }
-              console.info(arrTemp[arrTemp.length-1]);
-              arrTemp[arrTemp.length-1].push(list[i]);
+              arrTemp[arrTemp.length-1].push(item);
           }
-          console.info(arrTemp)
           return arrTemp;
+      },
+      saleListTemp: function (){
+          let list = this.saleList;
+          return list.map((item)=>{
+              return Object.assign(item,{"sale_time": moment(item.sale_time).format('YYYY-MM-DD')})
+          })
+      },
+      payListTemp: function (){
+          let list = this.payList;
+          return list.map((item)=>{
+              let fee_type;
+              //类型翻译
+              if(item.fee_type == '1'){
+                  fee_type="买货";
+              }else if(item.fee_type == '2'){
+                  fee_type="人工";
+              }else if(item.fee_type == '3'){
+                  fee_type="材料";
+              }else if(item.fee_type == '4'){
+                  fee_type="杂项";
+              }
+              return Object.assign(item,{"fee_type":fee_type,"pay_time": moment(item.pay_time).format('YYYY-MM-DD')})
+          })
+      },
+      incomeListTemp: function (){
+          let list = this.incomeList;
+          return list.map((item)=>{
+              let fee_type;
+              //类型翻译
+              if(item.fee_type == '1'){
+                  fee_type="定金";
+              }else if(item.fee_type == '2'){
+                  fee_type="尾款";
+              }
+              return Object.assign(item,{"fee_type":fee_type,"income_time": moment(item.income_time).format('YYYY-MM-DD')})
+          })
+      },
+      //日期组件显示
+      sale_time_show: function (){
+          return moment(this.saleInfo.sale_time).format('YYYY-MM-DD')
+      },
+      pay_time_show: function (){
+          return moment(this.payInfo.pay_time).format('YYYY-MM-DD')
+      },
+      income_time_show: function (){
+          return moment(this.incomeInfo.income_time).format('YYYY-MM-DD')
       }
   },
   //组件
@@ -372,7 +525,6 @@ export default {
       border-radius: 10px 10px 0px 0px;
       padding: 10px;
       background-color: #8654fb;
-      height:1rem;
     }
     .item-content{
       border-width: 1px;
@@ -411,14 +563,37 @@ export default {
   .attrItem{
     margin:10px;
   }
+
+
+  .record-header{
+    text-align: center;
+    padding: 13px;
+  }
+  .radio-group{
+    padding: 0.26667rem 0.42667rem;
+  }
+  .record-footer{
+    .van-button{
+      width: 100%;
+    }
+    display: flex;
+    justify-content: center;
+  }
+  .recordTable{
+    .recordRow{
+      .recordCell{
+        width: 100%;
+      }
+      padding: 10px ;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+    }
+  }
+
 }
 
-.saleShow-header{
-  padding: 13px;
-}
-.saleShow-bottom{
 
-}
 
 
 
